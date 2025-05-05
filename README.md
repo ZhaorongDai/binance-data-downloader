@@ -74,7 +74,7 @@ The tool will guide you through selecting:
 
 ### Command-line Arguments
 
-For automated downloads, you can specify parameters directly:
+For automated downloads or interactive mode, you can specify parameters directly:
 
 ```bash
 binance-data-downloader --data-type spot --interval daily --symbol klines --trading-pair BTCUSDT --time-interval 1m --start-date 2023-01-01 --end-date 2023-01-05 --verify-checksum --extract --extract-dir ./release/klines
@@ -248,7 +248,7 @@ binance-data-downloader
 
 ### 命令行参数
 
-对于自动下载，您可以直接指定参数：
+对于自动下载或交互模式，您可以直接指定参数：
 
 ```bash
 binance-data-downloader --data-type spot --interval daily --symbol klines --trading-pair BTCUSDT --time-interval 1m --start-date 2023-01-01 --end-date 2023-01-05 --verify-checksum --extract --extract-dir ./release/klines
