@@ -64,15 +64,11 @@ class HttpDownloader(Downloader):
         Returns:
             bool: True if download was successful, False otherwise
         """
-        # Create the output directory if it doesn't exist
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-        # Configure client with proxy if specified
         client_kwargs = {}
-        # Set a timeout for all HTTP operations
         client_kwargs["timeout"] = httpx.Timeout(30.0, connect=30.0)
 
-        # Configure proxy correctly for httpx
         if self.proxy:
             client_kwargs["proxy"] = self.proxy
 
@@ -99,7 +95,6 @@ class HttpDownloader(Downloader):
                                 if progress_callback:
                                     progress_callback(downloaded_size, total_size)
 
-                # Download checksum file if verification is requested and this is not already a checksum file
                 if verify_checksum and not url.endswith(".CHECKSUM"):
                     checksum_url = f"{url}.CHECKSUM"
                     checksum_path = f"{output_path}.CHECKSUM"
@@ -125,20 +120,19 @@ class HttpDownloader(Downloader):
                             # Continue to the next attempt
                             continue
                     except (httpx.HTTPError, httpx.TimeoutException) as e:
-                        logger.error(f"Failed to download checksum file: {e}")
-                        # If we can't download the checksum file, try the next attempt
+                        logger.error(
+                            f"Failed to download checksum file: {checksum_url}, retrying download..."
+                        )
                         continue
 
                 return True
 
             except (httpx.HTTPError, httpx.TimeoutException, asyncio.TimeoutError) as e:
                 logger.error(
-                    f"HTTP error occurred on attempt {attempt + 1}/{self.retry_count + 1}: {e}"
+                    f"HTTP error occurred on attempt {attempt + 1}/{self.retry_count + 1}, url: {url}"
                 )
 
-                # Always retry for the configured number of attempts, regardless of error type
                 if attempt < self.retry_count:
-                    # Wait before retrying (exponential backoff)
                     wait_time = 2**attempt
                     logger.info(f"Retrying in {wait_time} seconds...")
                     await asyncio.sleep(wait_time)
@@ -171,23 +165,18 @@ class HttpDownloader(Downloader):
         Returns:
             Dict[str, bool]: Dictionary mapping URLs to download success status
         """
-        # Create the output directory if it doesn't exist
         os.makedirs(output_dir, exist_ok=True)
 
-        # Create a semaphore to limit concurrent downloads
         semaphore = asyncio.Semaphore(max_concurrent_downloads)
 
-        # Create a dictionary to store results
         results = {}
 
-        # Create a list to store tasks
         tasks = []
 
         # Create a counter for completed files
         completed_files = 0
         total_files = len(urls)
 
-        # Define a wrapper function for downloading a file with the semaphore
         async def download_with_semaphore(url: str) -> Tuple[str, bool]:
             nonlocal completed_files
 
@@ -198,24 +187,18 @@ class HttpDownloader(Downloader):
             # Define a progress callback for this file
             def file_progress_callback(downloaded: int, total: int) -> None:
                 if progress_callback:
-                    # We're not using the downloaded and total parameters directly for overall progress
-                    # But we can use them to update the description with download percentage
                     progress_percentage = ""
                     if total > 0:
                         percentage = min(100, int(downloaded * 100 / total))
                         progress_percentage = f" ({percentage}%)"
 
-                    # This is a progress update, not a completion update, so pass 0 as completed count
-                    # This signals to the progress bar that we're just updating the description
                     progress_callback(
                         0,  # 0 indicates this is not a completion update
                         total_files,
                         f"{url}{progress_percentage}",
                     )
 
-            # Acquire the semaphore
             async with semaphore:
-                # Download the file
                 success = await self.download_file(
                     url=url,
                     output_path=output_path,
@@ -223,9 +206,7 @@ class HttpDownloader(Downloader):
                     progress_callback=file_progress_callback,
                 )
 
-                # Update progress with completion status
                 if progress_callback:
-                    # Increment the completed files counter
                     completed_files += 1
 
                     # Call the progress callback with the completed count
@@ -234,12 +215,11 @@ class HttpDownloader(Downloader):
 
                 return url, success
 
-        # Create tasks for downloading each file
+        # Task downloading each file
         for url in urls:
             task = asyncio.create_task(download_with_semaphore(url))
             tasks.append(task)
 
-        # Wait for all tasks to complete
         for task in asyncio.as_completed(tasks):
             url, success = await task
             results[url] = success
@@ -274,21 +254,17 @@ class HttpDownloader(Downloader):
 
         for file in files:
             filename = file.split("/")[-1]
-            # Try different date patterns in the filename
-            # First try full date format (YYYY-MM-DD)
             full_date_match = re.search(r"(\d{4}-\d{2}-\d{2})", filename)
-            # Then try year-month format (YYYY-MM)
             year_month_match = re.search(r"(\d{4}-\d{2})", filename)
 
             if full_date_match:
-                # We have a full date (YYYY-MM-DD)
+                # full date (YYYY-MM-DD)
                 file_date_str = full_date_match.group(1)
                 try:
                     file_date = datetime.datetime.strptime(
                         file_date_str, "%Y-%m-%d"
                     ).date()
 
-                    # Check if the file date is within the specified range
                     if start_date and file_date < start_date:
                         logger.debug(
                             f"Excluding {filename}: date {file_date} is before start date {start_date}"
@@ -307,13 +283,12 @@ class HttpDownloader(Downloader):
                     )
                     filtered_files.append(file)
                 except ValueError:
-                    # If the date parsing fails, include the file
                     logger.debug(
                         f"Including {filename}: date parsing failed for {file_date_str}"
                     )
                     filtered_files.append(file)
             elif year_month_match:
-                # We have a year-month format (YYYY-MM)
+                # year-month format (YYYY-MM)
                 file_date_str = year_month_match.group(1)
                 try:
                     # For year-month format, use the first day of the month
@@ -351,7 +326,6 @@ class HttpDownloader(Downloader):
                     )
                     filtered_files.append(file)
                 except ValueError:
-                    # If the date parsing fails, include the file
                     logger.debug(
                         f"Including {filename}: date parsing failed for {file_date_str}"
                     )

@@ -70,6 +70,11 @@ class CliApp:
             help="Directory to extract files to (default: creates a new directory with '_extracted' suffix)",
         )
         parser.add_argument(
+            "--use-default-extract-dir",
+            action="store_true",
+            help="Use default extract directory (default: creates a new directory with '_extracted' suffix)",
+        )
+        parser.add_argument(
             "--log-level",
             default="INFO",
             choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
@@ -358,15 +363,13 @@ class CliApp:
 
     async def run(self):
         """Run the CLI application."""
-        # Parse command-line arguments
         args = self._parse_args()
 
-        # Configure the application
         self._configure_from_args(args)
 
         try:
 
-            # Use pre-selected data type from command line if provided
+
             if args.data_type:
                 selected_data_type = args.data_type
                 logger.info(f"Using pre-selected data type: {selected_data_type}")
@@ -379,7 +382,6 @@ class CliApp:
                     data_types, "Available data types:"
                 )
 
-            # Use pre-selected interval from command line if provided
             if args.interval:
                 selected_interval = args.interval
                 logger.info(f"Using pre-selected interval: {selected_interval}")
@@ -389,15 +391,12 @@ class CliApp:
                 intervals = self.directory_tree_provider.get_available_intervals(
                     selected_data_type
                 )
-                # Prompt the user to select an interval
-                # For futures data, show a more descriptive prompt
                 prompt_text = "Available intervals:"
                 if selected_data_type == "futures":
                     prompt_text = "Available intervals (format: subtype/interval):"
 
                 selected_interval = self._select_from_list(intervals, prompt_text)
 
-            # Use pre-selected symbol from command line if provided
             if args.symbol:
                 selected_symbol = args.symbol
                 logger.info(f"Using pre-selected symbol: {selected_symbol}")
@@ -421,7 +420,6 @@ class CliApp:
                 # Prompt the user to select a symbol
                 selected_symbol = self._select_from_list(symbols, "Available symbols:")
 
-            # Use pre-selected trading pair from command line if provided
             if args.trading_pair:
                 selected_pair = args.trading_pair
                 logger.info(f"Using pre-selected trading pair: {selected_pair}")
@@ -454,12 +452,10 @@ class CliApp:
                         f"No trading pairs found for {selected_data_type}/{selected_interval}/{selected_symbol}"
                     )
                     return
-                    # Prompt the user to select a trading pair
                 selected_pair = self._select_from_list(
                     trading_pairs, f"Available {selected_symbol} trading pairs:"
                 )
 
-            # Check if this is a data type that has an additional time interval level
             # Some data types like klines, indexPriceKlines, markPriceKlines, etc. have time intervals
             time_interval_data_types = [
                 "klines",
@@ -469,39 +465,32 @@ class CliApp:
             ]
             if selected_symbol in time_interval_data_types:
 
-                # Use pre-selected time interval from command line if provided
                 if args.time_interval:
                     selected_time_interval = args.time_interval
                     logger.info(
                         f"Using pre-selected time interval: {selected_time_interval}"
                     )
                 else:
-                    # For klines, we need to get the available time intervals (e.g., 1m, 5m, etc.)
                     logger.info(
                         f"Getting time intervals for {selected_data_type}/{selected_interval}/{selected_symbol}/{selected_pair}..."
                     )
 
-                    # Construct the path differently for futures data
                     if selected_data_type == "futures" and "/" in selected_interval:
-                        # Split the interval into subtype and actual interval
                         subtype, actual_interval = selected_interval.split("/")
                         pair_path = f"data/{selected_data_type}/{subtype}/{actual_interval}/{selected_symbol}/{selected_pair}/"
                     else:
                         pair_path = f"data/{selected_data_type}/{selected_interval}/{selected_symbol}/{selected_pair}/"
 
-                    # Get all time intervals
                     time_intervals = self.directory_tree_provider.get_directory_tree(
                         pair_path
                     )
 
-                    # Filter out non-directory items
                     time_intervals = [
                         interval
                         for interval in time_intervals
                         if interval.endswith("/")
                     ]
 
-                    # Extract time interval names
                     time_intervals = [
                         interval.split("/")[-2] for interval in time_intervals
                     ]
@@ -511,73 +500,53 @@ class CliApp:
                             f"No time intervals found for {selected_data_type}/{selected_interval}/{selected_symbol}/{selected_pair}"
                         )
                         return
-                    # Prompt the user to select a time interval
                     selected_time_interval = self._select_from_list(
                         time_intervals, "Available time intervals (e.g., 1m, 5m):"
                     )
 
-                # Get files for the selected time interval
                 logger.info(
                     f"Getting files for {selected_data_type}/{selected_interval}/{selected_symbol}/{selected_pair}/{selected_time_interval}..."
                 )
 
-                # Construct the path differently for futures data
                 if selected_data_type == "futures" and "/" in selected_interval:
-                    # Split the interval into subtype and actual interval
                     subtype, actual_interval = selected_interval.split("/")
                     path = f"data/{selected_data_type}/{subtype}/{actual_interval}/{selected_symbol}/{selected_pair}/{selected_time_interval}/"
                 else:
                     path = f"data/{selected_data_type}/{selected_interval}/{selected_symbol}/{selected_pair}/{selected_time_interval}/"
 
-                # Get all files in the directory
                 all_files = self.directory_tree_provider.get_directory_tree(path)
-                # logger.info(
-                #     f"Raw files from directory tree:\n {all_files[0] + ' -> ' + all_files[-1] if len(all_files) > 10 else all_files}"
-                # )
 
-                # Filter out directories and only keep actual files (those with extensions)
                 files = [file for file in all_files if "." in file.split("/")[-1]]
                 logger.info(
                     f"Files after filtering for extensions:\n {'Begin: ' + files[0] + '    End: ' + files[-1] if len(files) > 10 else files}"
                 )
 
             else:
-                # For non-klines data types (like aggTrades, trades, etc.), files are directly under the trading pair directory
                 logger.info(
                     f"Getting files for {selected_data_type}/{selected_interval}/{selected_symbol}/{selected_pair}..."
                 )
 
-                # Construct the path differently for futures data
                 if selected_data_type == "futures" and "/" in selected_interval:
-                    # Split the interval into subtype and actual interval
                     subtype, actual_interval = selected_interval.split("/")
                     path = f"data/{selected_data_type}/{subtype}/{actual_interval}/{selected_symbol}/{selected_pair}/"
                 else:
                     path = f"data/{selected_data_type}/{selected_interval}/{selected_symbol}/{selected_pair}/"
 
-                # Get all files in the directory
                 all_files = self.directory_tree_provider.get_directory_tree(path)
-                # logger.info(
-                #     f"Raw files from directory tree:\n {all_files[0] + ' -> ' + all_files[-1] if len(all_files) > 10 else all_files}"
-                # )
 
-                # Filter out directories and only keep actual files (those with extensions)
+
                 files = [file for file in all_files if "." in file.split("/")[-1]]
                 logger.info(
                     f"Files after filtering for extensions:\n {'Begin: ' + files[0] + '    End: ' + files[-1] if len(files) > 10 else files}"
                 )
 
-                # For non-klines data types, we don't need to select a time interval
-                # We'll just use date range filtering directly
                 selected_time_interval = None
 
-            # Separate data files and checksum files
             data_files = [file for file in files if not file.endswith(".CHECKSUM")]
             checksum_files = [file for file in files if file.endswith(".CHECKSUM")]
 
             logger.info(f"Found {len(data_files)} data files to download")
 
-            # Parse date range from command line arguments if provided
             start_date = None
             end_date = None
 
@@ -599,20 +568,16 @@ class CliApp:
                 except ValueError:
                     logger.error(f"Invalid end date format: {args.end_date}")
 
-            # If dates weren't provided via command line, prompt the user
             if not start_date and not end_date:
                 start_date, end_date = self._prompt_for_date_range()
 
-            # Filter files by date range
             if start_date or end_date:
                 logger.info(
                     f"Filtering files by date range: {start_date} to {end_date}"
                 )
 
-                # Use the improved filter_files_by_date_range method for both klines and non-klines data
                 logger.info(f"Filtering {len(data_files)} files by date range...")
 
-                # Log some sample filenames for debugging
                 if len(data_files) > 0:
                     sample_size = min(5, len(data_files))
                     logger.debug(
@@ -623,12 +588,10 @@ class CliApp:
                     data_files, start_date, end_date
                 )
 
-                # Log the filtering results
                 logger.info(
                     f"Date filtering results: {len(filtered_data_files)}/{len(data_files)} files included"
                 )
 
-                # Log some sample filtered filenames for debugging
                 if len(filtered_data_files) > 0:
                     sample_size = min(5, len(filtered_data_files))
                     logger.debug(
@@ -637,7 +600,6 @@ class CliApp:
 
                 data_files = filtered_data_files
 
-                # Also filter the corresponding checksum files - make sure they exist in the original list
                 checksum_files = []
                 for file in data_files:
                     checksum_file = f"{file}.CHECKSUM"
@@ -648,7 +610,6 @@ class CliApp:
                     f"After date filtering: {len(data_files)} data files, {len(checksum_files)} checksum files"
                 )
 
-            # Prompt for checksum verification
             verify_checksum = args.verify_checksum
             if not verify_checksum:
                 verify_checksum_str = input("Verify checksums? (Y/n): ")
@@ -658,28 +619,15 @@ class CliApp:
                     else verify_checksum_str.lower() in ["y", "yes", "Y"]
                 )
 
-            # Prepare the final list of files to download
             files_to_download = data_files.copy()
             if verify_checksum:
-                # Add checksum files to the download list if verification is enabled
-                files_to_download.extend(checksum_files)
                 logger.info(f"Will also download {len(checksum_files)} checksum files")
-
-            # Define data types that have time intervals
-            time_interval_data_types = [
-                "klines",
-                "indexPriceKlines",
-                "markPriceKlines",
-                "premiumIndexKlines",
-            ]
 
             # Create a directory structure that mirrors the original
             if selected_data_type == "futures" and "/" in selected_interval:
-                # Split the interval into subtype and actual interval
                 subtype, actual_interval = selected_interval.split("/")
 
                 if selected_symbol in time_interval_data_types:
-                    # For data types with time intervals, include the time interval in the path
                     output_base_dir = os.path.join(
                         args.output_dir,
                         selected_data_type,
@@ -690,7 +638,6 @@ class CliApp:
                         selected_time_interval,
                     )
                 else:
-                    # For data types without time intervals, don't include the time interval in the path
                     output_base_dir = os.path.join(
                         args.output_dir,
                         selected_data_type,
@@ -701,7 +648,6 @@ class CliApp:
                     )
             else:
                 if selected_symbol in time_interval_data_types:
-                    # For data types with time intervals, include the time interval in the path
                     output_base_dir = os.path.join(
                         args.output_dir,
                         selected_data_type,
@@ -711,7 +657,6 @@ class CliApp:
                         selected_time_interval,
                     )
                 else:
-                    # For data types without time intervals, don't include the time interval in the path
                     output_base_dir = os.path.join(
                         args.output_dir,
                         selected_data_type,
@@ -752,9 +697,9 @@ class CliApp:
                     if not success:
                         logger.warning(f"Failed to download {file}")
 
-            # Ask if the user wants to extract the files
             extract_files = args.extract
             extract_dir = args.extract_dir
+            use_default_extract_dir = args.use_default_extract_dir
 
             if not extract_files:
                 extract_files_str = input("Extract downloaded files? (Y/n): ")
@@ -765,8 +710,7 @@ class CliApp:
                 )
 
             if extract_files:
-                if not extract_dir:
-                    # Ask if the user wants to specify a custom extraction directory
+                if not extract_dir and not use_default_extract_dir:
                     custom_dir_str = input("Use custom extraction directory? (y/N): ")
                     use_custom_dir = (
                         False
@@ -799,10 +743,9 @@ class CliApp:
                     progress_callback=self._display_extraction_progress,
                 )
 
-                # Close the progress bar
                 self.progress_bar.close()
 
-                # Print extraction summary
+                # extraction summary
                 extraction_success_count = sum(
                     1 for success in extraction_results.values() if success
                 )
@@ -816,9 +759,7 @@ class CliApp:
                         if not success:
                             logger.warning(f"Failed to extract {file}")
 
-                # Print the extraction directory
                 if extraction_results:
-                    # If extract_dir was specified, use that
                     if extract_dir:
                         logger.info(f"Files extracted to: {extract_dir}")
                     else:

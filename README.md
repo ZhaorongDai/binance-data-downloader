@@ -89,6 +89,7 @@ binance-data-downloader --data-type spot --interval daily --symbol klines --trad
 --output-dir                Output directory (default: ./downloads)
 --verify-checksum           Whether to verify the checksum
 --extract                   Extract files after downloading
+--use-default-extract-dir   Use default extract directory (default: creates a new directory with'_extracted' suffix)
 --extract-dir               Directory to extract files to
 --log-level                 Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 --data-type                 Pre-select data type (e.g., spot)
@@ -263,6 +264,7 @@ binance-data-downloader --data-type spot --interval daily --symbol klines --trad
 --output-dir                输出目录（默认：./downloads）
 --verify-checksum           是否验证校验和
 --extract                   下载后解压文件
+--use-default-extract-dir   使用默认的解压目录(默认：创建具有'_extracted'后缀的同一层级文件夹)
 --extract-dir               解压文件的目录
 --log-level                 日志级别（DEBUG、INFO、WARNING、ERROR、CRITICAL）
 --data-type                 预选数据类型（例如，spot）
