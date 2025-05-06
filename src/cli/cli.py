@@ -75,6 +75,12 @@ class CliApp:
             help="Use default extract directory (default: creates a new directory with '_extracted' suffix)",
         )
         parser.add_argument(
+            "--max-concurrent-extractions",
+            type=int,
+            default=5,
+            help="Maximum number of concurrent extractions",
+        )
+        parser.add_argument(
             "--log-level",
             default="INFO",
             choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
@@ -369,7 +375,6 @@ class CliApp:
 
         try:
 
-
             if args.data_type:
                 selected_data_type = args.data_type
                 logger.info(f"Using pre-selected data type: {selected_data_type}")
@@ -533,7 +538,6 @@ class CliApp:
                     path = f"data/{selected_data_type}/{selected_interval}/{selected_symbol}/{selected_pair}/"
 
                 all_files = self.directory_tree_provider.get_directory_tree(path)
-
 
                 files = [file for file in all_files if "." in file.split("/")[-1]]
                 logger.info(
@@ -736,11 +740,12 @@ class CliApp:
                     leave=True,
                 )
 
-                # Extract the files
-                extraction_results = self.downloader.extract_files(
+                # Extract the files asynchronously
+                extraction_results = await self.downloader.extract_files(
                     source_dir=output_base_dir,
                     extract_dir=extract_dir,
                     progress_callback=self._display_extraction_progress,
+                    max_concurrent_extractions=args.max_concurrent_extractions,
                 )
 
                 self.progress_bar.close()

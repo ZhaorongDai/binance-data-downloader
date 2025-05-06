@@ -340,13 +340,14 @@ class HttpDownloader(Downloader):
         )
         return filtered_files
 
-    def extract_files(
+    async def extract_files(
         self,
         source_dir: str,
         extract_dir: Optional[str] = None,
         progress_callback: Optional[Callable[[int, int, str], None]] = None,
+        max_concurrent_extractions: int = 5,
     ) -> Dict[str, bool]:
-        """Extract downloaded zip files.
+        """Extract downloaded zip files asynchronously.
 
         Args:
             source_dir (str): Directory containing the downloaded zip files
@@ -355,6 +356,7 @@ class HttpDownloader(Downloader):
                 but with '_extracted' suffix. Defaults to None.
             progress_callback (Optional[Callable[[int, int, str], None]], optional):
                 Callback for progress updates. Receives files completed, total files, and current file.
+            max_concurrent_extractions (int, optional): Maximum number of concurrent extractions. Defaults to 5.
 
         Returns:
             Dict[str, bool]: Dictionary mapping file paths to extraction success status
@@ -380,6 +382,9 @@ class HttpDownloader(Downloader):
         # Create the extraction directory if it doesn't exist
         os.makedirs(extract_dir, exist_ok=True)
 
+        # Create a semaphore to limit concurrent extractions
+        semaphore = asyncio.Semaphore(max_concurrent_extractions)
+
         # Extract each zip file
         results = {}
         total_files = len(zip_files)
@@ -390,7 +395,17 @@ class HttpDownloader(Downloader):
             # Call with 0 completed files to initialize
             progress_callback(0, total_files, "Initializing extraction...")
 
-        for zip_path in zip_files:
+        async def extract_zip_file(zip_path: str) -> Tuple[str, bool]:
+            """Extract a single zip file asynchronously.
+
+            Args:
+                zip_path (str): Path to the zip file to extract
+
+            Returns:
+                Tuple[str, bool]: Tuple of (zip_path, success)
+            """
+            nonlocal completed_files
+
             try:
                 # Determine the relative path from the source directory
                 rel_path = os.path.relpath(zip_path, source_dir)
@@ -405,20 +420,40 @@ class HttpDownloader(Downloader):
                         0, total_files, f"Extracting {os.path.basename(zip_path)}"
                     )
 
-                # Extract the zip file
-                with zipfile.ZipFile(zip_path, "r") as zip_ref:
-                    zip_ref.extractall(extract_subdir)
+                # Use a semaphore to limit concurrent extractions
+                async with semaphore:
+                    # Run the CPU-bound extraction in a thread pool
+                    await asyncio.to_thread(self._extract_zip, zip_path, extract_subdir)
 
                 # Update progress with completion
                 completed_files += 1
                 if progress_callback:
                     progress_callback(completed_files, total_files, zip_path)
 
-                results[zip_path] = True
-                # logger.info(f"Successfully extracted {zip_path} to {extract_subdir}")
+                return zip_path, True
 
             except Exception as e:
                 logger.error(f"Failed to extract {zip_path}: {e}")
-                results[zip_path] = False
+                return zip_path, False
+
+        # Create tasks for all zip files
+        tasks = [asyncio.create_task(extract_zip_file(zip_path)) for zip_path in zip_files]
+
+        # Wait for all tasks to complete
+        for task in asyncio.as_completed(tasks):
+            zip_path, success = await task
+            results[zip_path] = success
 
         return results
+
+    def _extract_zip(self, zip_path: str, extract_dir: str) -> None:
+        """Extract a zip file to the specified directory.
+
+        This is a synchronous method that will be run in a thread pool.
+
+        Args:
+            zip_path (str): Path to the zip file to extract
+            extract_dir (str): Directory to extract the zip file to
+        """
+        with zipfile.ZipFile(zip_path, "r") as zip_ref:
+            zip_ref.extractall(extract_dir)

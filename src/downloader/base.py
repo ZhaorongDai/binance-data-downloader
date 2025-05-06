@@ -91,13 +91,14 @@ class Downloader(ABC):
         pass
 
     @abstractmethod
-    def extract_files(
+    async def extract_files(
         self,
         source_dir: str,
         extract_dir: Optional[str] = None,
         progress_callback: Optional[Callable[[int, int, str], None]] = None,
+        max_concurrent_extractions: int = 5,
     ) -> Dict[str, bool]:
-        """Extract downloaded zip files.
+        """Extract downloaded zip files asynchronously.
 
         Args:
             source_dir (str): Directory containing the downloaded zip files
@@ -106,6 +107,7 @@ class Downloader(ABC):
                 but with '_extracted' suffix. Defaults to None.
             progress_callback (Optional[Callable[[int, int, str], None]], optional):
                 Callback for progress updates. Receives files completed, total files, and current file.
+            max_concurrent_extractions (int, optional): Maximum number of concurrent extractions. Defaults to 5.
 
         Returns:
             Dict[str, bool]: Dictionary mapping file paths to extraction success status

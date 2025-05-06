@@ -86,6 +86,7 @@ binance-data-downloader --data-type spot --interval daily --symbol klines --trad
 --proxy                     Proxy URL
 --retry-count               Number of retries for failed downloads (default: 3)
 --max-concurrent-downloads  Maximum number of concurrent downloads (default: 5)
+--max-concurrent-extractions Maximum number of concurrent extractions (default: 5)
 --output-dir                Output directory (default: ./downloads)
 --verify-checksum           Whether to verify the checksum
 --extract                   Extract files after downloading
@@ -261,6 +262,7 @@ binance-data-downloader --data-type spot --interval daily --symbol klines --trad
 --proxy                     代理URL
 --retry-count               失败下载的重试次数（默认：3）
 --max-concurrent-downloads  最大并发下载数（默认：5）
+--max-concurrent-extractions  最大并发解压数（默认：5）
 --output-dir                输出目录（默认：./downloads）
 --verify-checksum           是否验证校验和
 --extract                   下载后解压文件
