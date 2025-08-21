@@ -615,13 +615,14 @@ class CliApp:
                 )
 
             verify_checksum = args.verify_checksum
-            if not verify_checksum:
-                verify_checksum_str = input("Verify checksums? (Y/n): ")
-                verify_checksum = (
-                    True
-                    if verify_checksum_str == ""
-                    else verify_checksum_str.lower() in ["y", "yes", "Y"]
-                )
+            # 验证校验和在交互模式和命令行模式都需显式指定
+            # if not verify_checksum:
+            #     verify_checksum_str = input("Verify checksums? (Y/n): ")
+            #     verify_checksum = (
+            #         True
+            #         if verify_checksum_str == ""
+            #         else verify_checksum_str.lower() in ["y", "yes", "Y"]
+            #     )
 
             files_to_download = data_files.copy()
             if verify_checksum:
@@ -705,13 +706,14 @@ class CliApp:
             extract_dir = args.extract_dir
             use_default_extract_dir = args.use_default_extract_dir
 
-            if not extract_files:
-                extract_files_str = input("Extract downloaded files? (Y/n): ")
-                extract_files = (
-                    True
-                    if extract_files_str == ""
-                    else extract_files_str.lower() in ["y", "yes", "Y"]
-                )
+            # 解压文件在交互模式和命令行模式都需要显式指定
+            # if not extract_files:
+            #     extract_files_str = input("Extract downloaded files? (Y/n): ")
+            #     extract_files = (
+            #         True
+            #         if extract_files_str == ""
+            #         else extract_files_str.lower() in ["y", "yes", "Y"]
+            #     )
 
             if extract_files:
                 if not extract_dir and not use_default_extract_dir:

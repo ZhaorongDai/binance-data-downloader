@@ -64,6 +64,14 @@ Simply run the command without any arguments to enter interactive mode:
 binance-data-downloader
 ```
 
+For interactive mode, there are two parameters to specify:
+
+1. Whether to extract files (--extract)
+2. Whether to verify checksums (--verify-checksum)
+
+If no arguments are provided, files are not extracted by default and checksums are not verified.
+
+
 The tool will guide you through selecting:
 1. Data type (spot, futures, etc.)
 2. Interval (daily, monthly, etc.)
@@ -88,8 +96,8 @@ binance-data-downloader --data-type spot --interval daily --symbol klines --trad
 --max-concurrent-downloads  Maximum number of concurrent downloads (default: 5)
 --max-concurrent-extractions Maximum number of concurrent extractions (default: 5)
 --output-dir                Output directory (default: ./downloads)
---verify-checksum           Whether to verify the checksum
---extract                   Extract files after downloading
+--verify-checksum           Whether to verify the checksum (default: false)
+--extract                   Extract files after downloading (default: false)
 --use-default-extract-dir   Use default extract directory (default: creates a new directory with'_extracted' suffix)
 --extract-dir               Directory to extract files to
 --log-level                 Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
@@ -240,6 +248,13 @@ pip install .
 binance-data-downloader
 ```
 
+对于交互模式，有两个参数需要指定：
+
+1. 是否解压文件 (--extract)
+2. 是否验证校验和 (--verify-checksum)
+
+若不带任何参数，默认不解压文件，不验证校验和。
+
 该工具将引导您完成以下选择：
 1. 数据类型（现货、期货等）
 2. 时间间隔（每日、每月等）
@@ -264,9 +279,9 @@ binance-data-downloader --data-type spot --interval daily --symbol klines --trad
 --max-concurrent-downloads  最大并发下载数（默认：5）
 --max-concurrent-extractions  最大并发解压数（默认：5）
 --output-dir                输出目录（默认：./downloads）
---verify-checksum           是否验证校验和
---extract                   下载后解压文件
---use-default-extract-dir   使用默认的解压目录(默认：创建具有'_extracted'后缀的同一层级文件夹)
+--verify-checksum           是否验证校验和 (默认: False)
+--extract                   下载后解压文件 (默认：False)
+--use-default-extract-dir   使用默认的解压目录 (默认：创建具有'_extracted'后缀的同一层级文件夹)
 --extract-dir               解压文件的目录
 --log-level                 日志级别（DEBUG、INFO、WARNING、ERROR、CRITICAL）
 --data-type                 预选数据类型（例如，spot）

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "binance-data-downloader"
-version = "0.1.4"
+version = "0.2.0"
 description = "A command-line tool for downloading cryptocurrency data from Binance"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -32,8 +32,8 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/BaigeiMaster/binance-data-downloader"
-"Bug Tracker" = "https://github.com/BaigeiMaster/binance-data-downloader/issues"
+"Homepage" = "https://github.com/ZhaorongDai/binance-data-downloader"
+"Bug Tracker" = "https://github.com/ZhaorongDai/binance-data-downloader/issues"
 
 [project.scripts]
 binance-data-downloader = "src.cli.cli:main"
